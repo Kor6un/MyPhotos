@@ -11,10 +11,8 @@ import java.awt.image.ConvolveOp;
 import java.awt.image.Kernel;
 import java.io.File;
 import java.io.IOException;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
+import java.sql.Time;
+import java.util.concurrent.*;
 
 public class MyFrame extends JFrame implements ActionListener, ComponentListener {
 
@@ -700,36 +698,38 @@ public class MyFrame extends JFrame implements ActionListener, ComponentListener
 
         Graphics g = changedImage .getGraphics();
         g.drawImage(originalImage, 0, 0, null);
-        int width = changedImage.getWidth();
-        int height = changedImage.getHeight();
 
         ExecutorService service = Executors.newFixedThreadPool(THREADS_COUNT);
-        service.submit(new ToGrey());
+        service.submit( new ToGrey());
+        try {
+            TimeUnit.SECONDS.sleep(1);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
         service.shutdown();
 
         changedImageIcon = new ImageIcon(changedImage.getScaledInstance(scaleWidth,
                 scaleHeight, originalImage.SCALE_SMOOTH));
         changedImagePanel.add(new JLabel(changedImageIcon, SwingConstants.CENTER));
     }
-    public class ToGrey implements Callable{
 
-        @Override
-        public Object call() throws Exception {
+    public class ToGrey implements /*Runnable,*/ Callable{
+
+       /* @Override
+        public void run() {
 
             for (int i = 0; i < changedImage.getHeight(); i++) {
                 for (int j = 0; j < changedImage.getWidth(); j++) {
-                    int pixel = changedImage.getRGB(j, i);
+                    convertPixelToGrey(changedImage, i, j);
+                }
+            }
+        }*/
 
-                    int alpha = (pixel & 0xFF000000) >>> 24;
-
-                    int red = (pixel & 0x00FF0000) >>> 16;
-                    int green = (pixel & 0x0000FF00) >>> 8;
-                    int blue = (pixel & 0x000000FF);
-
-                    int mean = (red + green + blue) / 3;
-                    int newPixel = (alpha << 24) + (mean << 16) + (mean << 8) + mean;
-
-                    changedImage.setRGB(j, i, newPixel);
+        @Override
+        public Object call() throws Exception {
+            for (int i = 0; i < changedImage.getHeight(); i++) {
+                for (int j = 0; j < changedImage.getWidth(); j++) {
+                    convertPixelToGrey(changedImage, i, j);
                 }
             }
             return changedImage;
