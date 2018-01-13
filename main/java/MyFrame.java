@@ -11,10 +11,14 @@ import java.awt.image.ConvolveOp;
 import java.awt.image.Kernel;
 import java.io.File;
 import java.io.IOException;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 public class MyFrame extends JFrame implements ActionListener, ComponentListener {
 
-    private static final int THREAD_COUNT = 4;
+    private static final int THREADS_COUNT = 3;
     private long start,end;
     private JButton grey, negative, blur, outline, clear;
     private ImageIcon originalImageIcon, changedImageIcon;
@@ -547,39 +551,6 @@ public class MyFrame extends JFrame implements ActionListener, ComponentListener
         changedImagePanel.add(new JLabel(changedImageIcon));
     }
 
-    private void setGreyThread() throws InterruptedException {
-        changedImage = new BufferedImage(originalImage.getWidth(),
-                originalImage.getHeight(),
-                originalImage.getType());
-
-        Graphics g = changedImage .getGraphics();
-        g.drawImage(originalImage, 0, 0, null);
-        int width = changedImage.getWidth();
-        int height = changedImage.getHeight();
-
-        Thread[] threads = new Thread[THREAD_COUNT];
-
-        for (int k = 0; k < THREAD_COUNT; k++) {
-            int n = k;
-            threads[k] = new Thread() {
-                public void run() {
-                    for (int i = n / THREAD_COUNT; i < height * (n+1) / THREAD_COUNT; i++) {
-                        for (int j = 0; j < width; j++) {
-                            convertPixelToGrey(changedImage, i, j);
-                        }
-                    }
-                }
-            };
-            threads[k].start();
-            threads[k].join();
-        }
-
-        changedImageIcon = new ImageIcon(changedImage.getScaledInstance(scaleWidth,
-                scaleHeight, originalImage.SCALE_SMOOTH));
-        changedImagePanel.add(new JLabel(changedImageIcon, SwingConstants.CENTER));
-
-    }
-
     private void convertPixelToGrey(BufferedImage image, int i, int j) {
 
         int pixel = image.getRGB(j, i);
@@ -596,6 +567,41 @@ public class MyFrame extends JFrame implements ActionListener, ComponentListener
         image.setRGB(j, i, newPixel);
     }
 
+    private void setGreyThread() throws InterruptedException {
+        changedImage = new BufferedImage(originalImage.getWidth(),
+                originalImage.getHeight(),
+                originalImage.getType());
+
+        Graphics g = changedImage .getGraphics();
+        g.drawImage(originalImage, 0, 0, null);
+        int width = changedImage.getWidth();
+        int height = changedImage.getHeight();
+
+        Thread[] threads = new Thread[THREADS_COUNT];
+
+        for (int k = 0; k < THREADS_COUNT; k++) {
+            int n = k;
+            threads[k] = new Thread() {
+                public void run() {
+                    for (int i = n / THREADS_COUNT; i < height * (n+1) / THREADS_COUNT; i++) {
+                        for (int j = 0; j < width; j++) {
+                            convertPixelToGrey(changedImage, i, j);
+                        }
+                    }
+                }
+            };
+            threads[k].start();
+
+        }
+        for (int i = 0; i < THREADS_COUNT; i++) {
+            threads[i].join();
+        }
+
+        changedImageIcon = new ImageIcon(changedImage.getScaledInstance(scaleWidth,
+                scaleHeight, originalImage.SCALE_SMOOTH));
+        changedImagePanel.add(new JLabel(changedImageIcon, SwingConstants.CENTER));
+
+    }
     private void setNegativeThread() {
 
         changedImagePanel.add(new JLabel("NegativeThread в стадии разработки!"));
@@ -688,7 +694,46 @@ public class MyFrame extends JFrame implements ActionListener, ComponentListener
 
     private void setGreyExecutor() {
 
-        changedImagePanel.add(new JLabel("GreyExecutor в стадии разработки!"));
+        changedImage = new BufferedImage(originalImage.getWidth(),
+                originalImage.getHeight(),
+                originalImage.getType());
+
+        Graphics g = changedImage .getGraphics();
+        g.drawImage(originalImage, 0, 0, null);
+        int width = changedImage.getWidth();
+        int height = changedImage.getHeight();
+
+        ExecutorService service = Executors.newFixedThreadPool(THREADS_COUNT);
+        service.submit(new ToGrey());
+        service.shutdown();
+
+        changedImageIcon = new ImageIcon(changedImage.getScaledInstance(scaleWidth,
+                scaleHeight, originalImage.SCALE_SMOOTH));
+        changedImagePanel.add(new JLabel(changedImageIcon, SwingConstants.CENTER));
+    }
+    public class ToGrey implements Callable{
+
+        @Override
+        public Object call() throws Exception {
+
+            for (int i = 0; i < changedImage.getHeight(); i++) {
+                for (int j = 0; j < changedImage.getWidth(); j++) {
+                    int pixel = changedImage.getRGB(j, i);
+
+                    int alpha = (pixel & 0xFF000000) >>> 24;
+
+                    int red = (pixel & 0x00FF0000) >>> 16;
+                    int green = (pixel & 0x0000FF00) >>> 8;
+                    int blue = (pixel & 0x000000FF);
+
+                    int mean = (red + green + blue) / 3;
+                    int newPixel = (alpha << 24) + (mean << 16) + (mean << 8) + mean;
+
+                    changedImage.setRGB(j, i, newPixel);
+                }
+            }
+            return changedImage;
+        }
     }
     private void setNegativeExecutor() {
 
