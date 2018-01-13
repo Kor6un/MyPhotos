@@ -14,6 +14,7 @@ import java.io.IOException;
 
 public class MyFrame extends JFrame implements ActionListener, ComponentListener {
 
+    private static final int THREAD_COUNT = 4;
     private long start,end;
     private JButton grey, negative, blur, outline, clear;
     private ImageIcon originalImageIcon, changedImageIcon;
@@ -418,7 +419,7 @@ public class MyFrame extends JFrame implements ActionListener, ComponentListener
 
         for (int i = 0; i < height; i++) {
             for (int j = 0; j < width; j++) {
-                invertPixelToGrey(changedImage, i, j);
+                convertPixelToGrey(changedImage, i, j);
             }
         }
         changedImageIcon = new ImageIcon(changedImage.getScaledInstance(scaleWidth,
@@ -556,65 +557,30 @@ public class MyFrame extends JFrame implements ActionListener, ComponentListener
         int width = changedImage.getWidth();
         int height = changedImage.getHeight();
 
-        Thread t1 = new Thread() {
+        Thread[] threads = new Thread[THREAD_COUNT];
 
-            public void run() {
-
-                for (int i = 0; i < height / 4; i++) {
-                    for (int j = 0; j < width; j++) {
-                        invertPixelToGrey(changedImage, i, j);
-                    }
-                }
-            }
-        };
-            Thread t2 = new Thread() {
-
+        for (int k = 0; k < THREAD_COUNT; k++) {
+            int n = k;
+            threads[k] = new Thread() {
                 public void run() {
-
-                    for (int i = height/4; i < height/2; i++) {
+                    for (int i = n / THREAD_COUNT; i < height * (n+1) / THREAD_COUNT; i++) {
                         for (int j = 0; j < width; j++) {
-                            invertPixelToGrey(changedImage, i, j);
+                            convertPixelToGrey(changedImage, i, j);
                         }
                     }
                 }
-        };
-        Thread t3 = new Thread() {
+            };
+            threads[k].start();
+            threads[k].join();
+        }
 
-            public void run() {
-
-                for (int i = height / 2; i < 3 * height / 4; i++) {
-                    for (int j = 0; j < width; j++) {
-                        invertPixelToGrey(changedImage, i, j);
-                    }
-                }
-            }
-        };Thread t4 = new Thread() {
-
-            public void run() {
-
-                for (int i = 3 * height / 4; i < height; i++) {
-                    for (int j = 0; j < width; j++) {
-                        invertPixelToGrey(changedImage, i, j);
-                    }
-                }
-            }
-        };
-
-        t1.start();
-        t2.start();
-        t3.start();
-        t4.start();
-        t1.join();
-        t2.join();
-        t3.join();
-        t4.join();
         changedImageIcon = new ImageIcon(changedImage.getScaledInstance(scaleWidth,
                 scaleHeight, originalImage.SCALE_SMOOTH));
         changedImagePanel.add(new JLabel(changedImageIcon, SwingConstants.CENTER));
 
     }
 
-    private void invertPixelToGrey(BufferedImage image, int i, int j) {
+    private void convertPixelToGrey(BufferedImage image, int i, int j) {
 
         int pixel = image.getRGB(j, i);
 
@@ -784,8 +750,8 @@ public class MyFrame extends JFrame implements ActionListener, ComponentListener
         if (originalImage == null || changedImage == null) {
             openImage();
         } else if (changedImage != null) {
+
             saveFile();
-           // clearImagesPanels();
             openImage();
         }
     }
