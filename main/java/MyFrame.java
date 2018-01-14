@@ -34,8 +34,6 @@ public class MyFrame extends JFrame implements ActionListener, ComponentListener
     private JPanel buttomPanel;
     private String time;
 
-  //  private final int THREADS = 3;
-
     public MyFrame() throws IOException {
 
         this.setTitle("Мой карманный фотошоп");
@@ -737,32 +735,32 @@ public class MyFrame extends JFrame implements ActionListener, ComponentListener
     }
     private void setNegativeExecutor() {
 
-        changedImagePanel.add(new JLabel("NegativeExecutor в стадии разработки!"));
+        changedImagePanel.add(new JLabel("NegativeExecutor в стадии разработки!", SwingConstants.CENTER));
     }
     private void setBlurExecutor() {
 
-        changedImagePanel.add(new JLabel("BlurExecutor в стадии разработки!"));
+        changedImagePanel.add(new JLabel("BlurExecutor в стадии разработки!", SwingConstants.CENTER));
     }
     private void setOutlineExecutor() {
 
-        changedImagePanel.add(new JLabel("OutlineExecutor в стадии разработки!"));
+        changedImagePanel.add(new JLabel("OutlineExecutor в стадии разработки!", SwingConstants.CENTER));
     }
 
     private void setGreyFramework() {
 
-        changedImagePanel.add(new JLabel("GreyFramework в стадии разработки!"));
+        changedImagePanel.add(new JLabel("GreyFramework в стадии разработки!", SwingConstants.CENTER));
     }
     private void setNegativeFramework() {
 
-        changedImagePanel.add(new JLabel("NegativeFramework в стадии разработки!"));
+        changedImagePanel.add(new JLabel("NegativeFramework в стадии разработки!", SwingConstants.CENTER));
     }
     private void setBlurFramework() {
 
-        changedImagePanel.add(new JLabel("BlurFramework в стадии разработки!"));
+        changedImagePanel.add(new JLabel("BlurFramework в стадии разработки!", SwingConstants.CENTER));
     }
     private void setOutlineFramework() {
 
-        changedImagePanel.add(new JLabel("OutlineFramework в стадии разработки!"));
+        changedImagePanel.add(new JLabel("OutlineFramework в стадии разработки!", SwingConstants.CENTER));
     }
 
     private void clearChangedImage() {
