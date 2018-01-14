@@ -11,12 +11,11 @@ import java.awt.image.ConvolveOp;
 import java.awt.image.Kernel;
 import java.io.File;
 import java.io.IOException;
-import java.sql.Time;
 import java.util.concurrent.*;
 
 public class MyFrame extends JFrame implements ActionListener, ComponentListener {
 
-    private static final int THREADS_COUNT = 3;
+    private static final int THREADS_COUNT = 10;
     private long start,end;
     private JButton grey, negative, blur, outline, clear;
     private ImageIcon originalImageIcon, changedImageIcon;
@@ -698,7 +697,7 @@ public class MyFrame extends JFrame implements ActionListener, ComponentListener
         g.drawImage(originalImage, 0, 0, null);
 
         ExecutorService service = Executors.newFixedThreadPool(THREADS_COUNT);
-        service.submit( new ToGrey());
+        service.submit( new ConvertImageToGreyByExecutorSevices(changedImage));
         try {
             TimeUnit.SECONDS.sleep(1);
         } catch (InterruptedException e) {
@@ -711,7 +710,13 @@ public class MyFrame extends JFrame implements ActionListener, ComponentListener
         changedImagePanel.add(new JLabel(changedImageIcon, SwingConstants.CENTER));
     }
 
-    public class ToGrey implements /*Runnable,*/ Callable{
+    public class ConvertImageToGreyByExecutorSevices implements /*Runnable,*/ Callable{
+
+        BufferedImage image;
+
+        public ConvertImageToGreyByExecutorSevices (BufferedImage image) {
+            this.image = image;
+        }
 
        /* @Override
         public void run() {
@@ -725,12 +730,12 @@ public class MyFrame extends JFrame implements ActionListener, ComponentListener
 
         @Override
         public Object call() throws Exception {
-            for (int i = 0; i < changedImage.getHeight(); i++) {
-                for (int j = 0; j < changedImage.getWidth(); j++) {
-                    convertPixelToGrey(changedImage, i, j);
+            for (int i = 0; i < image.getHeight(); i++) {
+                for (int j = 0; j < image.getWidth(); j++) {
+                    convertPixelToGrey(image, i, j);
                 }
             }
-            return changedImage;
+            return image;
         }
     }
     private void setNegativeExecutor() {
