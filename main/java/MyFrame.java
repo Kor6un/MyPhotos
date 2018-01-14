@@ -748,7 +748,90 @@ public class MyFrame extends JFrame implements ActionListener, ComponentListener
     }
     private void setOutlineExecutor() {
 
-        changedImagePanel.add(new JLabel("OutlineExecutor в стадии разработки!", SwingConstants.CENTER));
+        changedImage = new BufferedImage(originalImage.getWidth(),
+                originalImage.getHeight(),
+                originalImage.getType());
+        Graphics g = changedImage .getGraphics();
+        g.drawImage(originalImage, 0, 0, null);
+
+        ExecutorService service = Executors.newFixedThreadPool(THREADS_COUNT);
+        service.submit(new OutlineByExecutorServices(changedImage));
+        try {
+            TimeUnit.MILLISECONDS.sleep(5000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        service.shutdown();
+
+        changedImageIcon = new ImageIcon(changedImage.getScaledInstance(scaleWidth,scaleHeight, originalImage.SCALE_SMOOTH));
+        changedImagePanel.add(new JLabel(changedImageIcon));
+    }
+
+    public class OutlineByExecutorServices implements Runnable {
+
+        BufferedImage image;
+        OutlineByExecutorServices (BufferedImage image) {
+            this.image = image;
+        }
+        @Override
+        public void run() {
+            // the sobel matrix in two 2D arrays
+            int[][] sx = {{-1,0,1},{-1,0,1},{-1,0,1}};
+            int[][] sy = {{-1,-1,-1},{0,0,0},{1,1,1}};
+
+            // get image width and height
+            int width = image.getWidth();
+            int height = image.getHeight();
+
+            // a sobel template 2D array for calculation
+            int[][] sob;
+            // at first need to greyscale and populate sob[][] array
+            sob = new int[width][height];
+            for (int y = 0; y < height; y++) {
+                for (int x = 0; x < width; x++) {
+                    int pixel = image.getRGB(x, y);
+
+                    int alpha = (pixel & 0xFF000000) >>> 24;
+
+                    int red = (pixel & 0x00FF0000) >>> 16;
+                    int green = (pixel & 0x0000FF00) >>> 8;
+                    int blue = (pixel & 0x000000FF);
+
+                    int mean = (red + green + blue) / 3;
+                    sob[x][y] = mean;
+                    int newPixel = (alpha << 24) + (mean << 16) + (mean << 8) + mean;
+
+                    image.setRGB(x, y, newPixel);
+                }
+            }
+            // sobel calculation
+            for (int y = 1; y < height-1; y++) {
+                for (int x = 1; x < width-1; x++) {
+                    int px = (sx[0][0] * sob[x-1][y-1]) + (sx[0][1] * sob[x][y-1]) +
+                            (sx[0][2] * sob[x+1][y-1]) + (sx[1][0] * sob[x-1][y]) +
+                            (sx[1][1] * sob[x][y]) + (sx[1][2] * sob[x+1][y]) +
+                            (sx[2][0] * sob[x-1][y+1]) + (sx[2][1] * sob[x][y+1]) +
+                            (sx[2][2] * sob[x+1][y+1]);
+
+                    int py = (sy[0][0] * sob[x-1][y-1]) + (sy[0][1] * sob[x][y-1]) +
+                            (sy[0][2] * sob[x+1][y-1]) + (sy[1][0] * sob[x-1][y]) +
+                            (sy[1][1] * sob[x][y]) + (sy[1][2] * sob[x+1][y]) +
+                            (sy[2][0] * sob[x-1][y+1]) + (sy[2][1] * sob[x][y+1]) +
+                            (sy[2][2] * sob[x+1][y+1]);
+
+                    int pixel = (int) Math.sqrt((px * px) + (py * py));
+
+                    if (pixel>255) {
+                        pixel = 255;
+                    } else if (pixel<0) {
+                        pixel = 0;
+                    }
+
+                    Color pix = new Color(pixel,pixel,pixel);
+                    image.setRGB(x, y, pix.getRGB());
+                }
+            }
+        }
     }
 
     private void setGreyFramework() {
